@@ -43,6 +43,8 @@ object login {
 
   import org.scalajs.dom.console
   import com.raquo.airstream.core.EventStream
+  import medulla.cookie.Cookie
+  import org.scalajs.dom.document
 
   trait LoginHelper {
     def isLoggedIn: Boolean
@@ -51,11 +53,21 @@ object login {
 
   class StaticLoginHelper extends LoginHelper {
 
-    override def isLoggedIn = true
+    override def isLoggedIn = {
+      medulla
+        .cookie
+        .Cookie
+        .parse(document.cookie)
+        .exists { (_, cookie) =>
+          cookie.name == "medulla-auth-loggedin" && cookie.value == "true"
+        }
+    }
 
     override def test(in: Boolean, user: Option[UserToken]) = {
-      console.info(s"[Medulla] Testing cookie:$in, user:${user.nonEmpty}")
-      EventStream.fromValue(Some(new UserToken {
+      console.info(s"[Medulla] Testing cookie:$in, user:${user.map(_.email).getOrElse("_")}")
+
+      if(!in) EventStream.fromValue(None)
+      else    EventStream.fromValue(Some(new UserToken {
         override def name = "Leandro Cruz"
         override def email = "leandro@medulla.com"
       }))
@@ -67,16 +79,28 @@ object render {
 
   import org.scalajs.dom.*
   import com.raquo.laminar.api.L.*
+  import com.raquo.waypoint.SplitRender
+  import medulla.Pages.Page
 
   trait AppRender {
-    def whenLoggedIn(user: UserToken) : HtmlElement
-    def whenLoggedOut                 : HtmlElement
+    def whenLoggedIn(user: UserToken) : Signal[HtmlElement]
+    def whenLoggedOut                 : Signal[HtmlElement]
   }
 
   class StaticAppRender extends AppRender {
 
-    override def whenLoggedIn(user: UserToken) = b(s"Hello ${user.name}!")
-    override def whenLoggedOut                 = div("Logged Out!")
+    override def whenLoggedOut = Signal.fromValue(div("Logged Out!"))
+
+    override def whenLoggedIn(user: UserToken) = {
+      val body: SplitRender[Page, HtmlElement] = SplitRender[Page, HtmlElement](MedullaRouter.page).collect {
+        case p => div(
+          b(s"Hello ${user.name}!"),
+          br(),
+          small(s"(page: $p)")
+        )
+      }
+      body.signal
+    }
   }
 }
 
@@ -117,4 +141,36 @@ object config {
     fetch = FetchConfig("http://localhost:9000"),
     login = LoginConfig(5000),
   )
+}
+
+object cookie {
+
+  import org.scalajs.dom.document
+  import scala.scalajs.js.URIUtils.decodeURIComponent
+
+  case class Cookie(
+    name     : String,
+    value    : String,
+    path     : Option[String] = None,
+    domain   : Option[String] = None,
+    expires  : Option[String] = None,
+    maxAge   : Option[Int]    = None,
+    secure   : Boolean        = false,
+    httpOnly : Boolean        = false,
+    sameSite : Option[String] = None
+  )
+
+  object Cookie {
+    def parse(cookieString: String): Map[String, Cookie] = {
+      cookieString
+        .split(";\\s*")
+        .flatMap { _.split("=", 2) match
+          case Array(rawName, rawValue) =>
+            val name  = decodeURIComponent(rawName.trim)
+            val value = decodeURIComponent(rawValue.trim)
+            Some(name -> Cookie(name, value))
+          case _ => None
+        }.toMap
+    }
+  }
 }
