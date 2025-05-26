@@ -2,8 +2,8 @@ package medulla
 
 object login {
 
-  import org.scalajs.dom.{console, document}
   import com.raquo.airstream.core.EventStream
+  import org.scalajs.dom.{console, document}
 
   trait LoginHelper {
     def isLoggedIn: Boolean
@@ -36,8 +36,8 @@ object render {
   import com.raquo.laminar.api.L.*
 
   trait AppRender {
-    def whenLoggedIn(user: UserToken): Signal[HtmlElement]
-    def whenLoggedOut                : Signal[HtmlElement]
+    def whenLoggedIn(user: UserToken): HtmlElement
+    def whenLoggedOut                : HtmlElement
   }
 }
 
@@ -90,5 +90,28 @@ object cookie {
           case _ => None
         }.toMap
     }
+  }
+}
+
+object router {
+
+  import com.raquo.laminar.api.L
+  import com.raquo.laminar.api.L.*
+  import com.raquo.waypoint.{Route, Router, SplitRender}
+  import io.circe.*
+  import io.circe.parser.*
+  import io.circe.syntax.*
+  import scala.reflect.ClassTag
+
+  class MedullaRouter[BasePage: ClassTag](dftl: String => BasePage)(routes: Route[_ <: BasePage, _]*)(using Encoder[BasePage], Decoder[BasePage]) {
+
+    protected def title        (page: BasePage) : String   = "Medulla"
+    protected def encodePage   (page: BasePage) : String   = page.asJson.spaces2SortKeys
+    protected def decodePage   (data: String)   : BasePage = decode[BasePage](data).getOrElse(dftl(data))
+    protected def unknownRoute (str: String)    : BasePage = dftl(str)
+
+    private val router = Router[BasePage](routes.toList, encodePage, decodePage, title, unknownRoute)
+
+    def render(fn: BasePage => HtmlElement): Signal[HtmlElement] = SplitRender[BasePage, HtmlElement](router.currentPageSignal).collect(fn).signal
   }
 }

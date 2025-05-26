@@ -14,7 +14,7 @@ case class DefaultMedullaApp(config: MedullaConfig, login: LoginHelper, render: 
 
   override def rootElement: HtmlElement = {
 
-    def renderBody(maybe: Option[UserToken]): Signal[HtmlElement] = {
+    def renderBody(maybe: Option[UserToken]): HtmlElement = {
       maybe match
         case Some(user) => render.whenLoggedIn(user)
         case None       => render.whenLoggedOut
@@ -29,7 +29,7 @@ case class DefaultMedullaApp(config: MedullaConfig, login: LoginHelper, render: 
 
     div(
       user  --> Globals.user,
-      child <-- Globals.user.events.distinct.flatMapSwitch(renderBody)
+      child <-- Globals.user.events.distinct.map(renderBody)
     )
   }
 }
