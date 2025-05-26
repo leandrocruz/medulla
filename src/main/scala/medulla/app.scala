@@ -28,6 +28,7 @@ case class DefaultMedullaApp(config: MedullaConfig, login: LoginHelper, render: 
       .flatMapSwitch(login.test)
 
     div(
+      display("contents"), //https://caniuse.com/css-display-contents
       user  --> Globals.user,
       child <-- Globals.user.events.distinct.map(renderBody)
     )
