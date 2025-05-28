@@ -13,7 +13,8 @@ import org.scalajs.dom.*
 class SampleLoginHelper extends DefaultLoginHelper {
   override def retrieve = EventStream.fromValue {
     Some {
-      new UserToken {
+      new UserToken[Long] {
+        override def id    = 1
         override def name  = "Leandro Cruz"
         override def email = "leandro@medulla.com"
       }
@@ -21,7 +22,7 @@ class SampleLoginHelper extends DefaultLoginHelper {
   }
 }
 
-class SampleAppRender extends AppRender {
+class SampleAppRender extends AppRender[Long] {
 
   sealed trait Page
   case object HomePage                extends Page
@@ -38,9 +39,9 @@ class SampleAppRender extends AppRender {
 
   override def whenLoggedOut = div("Logged Out!")
 
-  override def whenLoggedIn(user: UserToken) = {
+  override def whenLoggedIn(user: UserToken[Long]) = {
     div(
-      h1(s"TOP ${user.email}"),
+      h1(s"TOP ${user.email} (${user.id})"),
       child <-- router.render {
         case HomePage       => div("HOME")
         case TestPage       => div("TEST")

@@ -10,11 +10,13 @@ def main(): Unit = {
   import com.raquo.laminar.api.L.renderOnDomContentLoaded
   import org.scalajs.dom.document
 
+  type UID = Long
+
   newDesign
-    .bind[MedullaConfig].toInstance(config.localDev)
-    .bind[LoginHelper]  .to[SampleLoginHelper]
-    .bind[AppRender]    .to[SampleAppRender]
-    .bind[MedullaApp]   .to[DefaultMedullaApp]
+    .bind [MedullaConfig   ].toInstance(config.localDev)
+    .bind [LoginHelper[UID]].to[SampleLoginHelper]
+    .bind [AppRender  [UID]].to[SampleAppRender]
+    .bind [MedullaApp      ].to[DefaultMedullaApp[UID]]
     .build[MedullaApp] { app =>
       lazy val container = document.getElementById("app") // must be lazy
       renderOnDomContentLoaded(container, app.rootElement)

@@ -5,12 +5,12 @@ object login {
   import com.raquo.airstream.core.EventStream
   import org.scalajs.dom.{console, document}
 
-  trait LoginHelper {
+  trait LoginHelper[UID] {
     def isLoggedIn: Boolean
-    def test(in: Boolean, user: Option[UserToken]): EventStream[Option[UserToken]]
+    def test(in: Boolean, user: Option[UserToken[UID]]): EventStream[Option[UserToken[UID]]]
   }
 
-  abstract class DefaultLoginHelper extends LoginHelper {
+  abstract class DefaultLoginHelper extends LoginHelper[Long] {
 
     override def isLoggedIn = {
       medulla
@@ -22,12 +22,12 @@ object login {
         }
     }
 
-    override def test(in: Boolean, user: Option[UserToken]) = {
+    override def test(in: Boolean, user: Option[UserToken[Long]]) = {
       console.debug(s"[Medulla] Testing cookie:$in, user:${user.map(_.email).getOrElse("_")}")
       if (in) retrieve else EventStream.fromValue(None)
     }
 
-    def retrieve: EventStream[Option[UserToken]]
+    def retrieve: EventStream[Option[UserToken[Long]]]
   }
 }
 
@@ -35,9 +35,9 @@ object render {
 
   import com.raquo.laminar.api.L.*
 
-  trait AppRender {
-    def whenLoggedIn(user: UserToken): HtmlElement
-    def whenLoggedOut                : HtmlElement
+  trait AppRender[UID] {
+    def whenLoggedIn(user: UserToken[UID]): HtmlElement
+    def whenLoggedOut                     : HtmlElement
   }
 }
 
