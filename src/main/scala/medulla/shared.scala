@@ -102,6 +102,8 @@ object router {
   import io.circe.parser.*
   import io.circe.syntax.*
   import scala.reflect.ClassTag
+  import org.scalajs.dom
+  import scala.util.{Try, Success, Failure}
 
   class MedullaRouter[BasePage: ClassTag](dftl: String => BasePage)(routes: Route[_ <: BasePage, _]*)(using Encoder[BasePage], Decoder[BasePage]) {
 
@@ -113,5 +115,34 @@ object router {
     private val router = Router[BasePage](routes.toList, encodePage, decodePage, title, unknownRoute)
 
     def render(fn: BasePage => HtmlElement): Signal[HtmlElement] = SplitRender[BasePage, HtmlElement](router.currentPageSignal).collect(fn).signal
+
+    def navigateTo(page: BasePage): Unit = router.pushState(page)
+
+    def linkTo(page: BasePage): Binder[HtmlElement] = Binder { el =>
+      val isLinkElement = el.ref.isInstanceOf[dom.html.Anchor]
+
+      if (isLinkElement) {
+        Try(router.absoluteUrlForPage(page)) match
+          case Success(url) => el.amend(href(url))
+          case Failure(err) => dom.console.error(s"Routing Error for '$page': " + err)
+      }
+
+      // If element is a link and user is holding a modifier while clicking:
+      //  - Do nothing, browser will open the URL in new tab / window / etc. depending on the modifier key
+      // Otherwise:
+      //  - Perform regular pushState transition
+      //  - Scroll to top of page
+
+      val onRegularClick = onClick
+        .filter(ev => !(isLinkElement && (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey)))
+        .preventDefault
+
+      (onRegularClick --> { _ =>
+        router.pushState(page)
+        dom.window.scrollTo(0, 0) // Scroll to top of page when navigating
+      }).bind(el)
+    }
+
+
   }
 }

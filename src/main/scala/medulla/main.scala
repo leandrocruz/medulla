@@ -7,6 +7,8 @@ def main(): Unit = {
   import wvlet.airframe.*
   import medulla.render.AppRender
   import medulla.login.LoginHelper
+  import medulla.sample.login.SampleLoginHelper
+  import medulla.sample.render.SampleAppRender
   import com.raquo.laminar.api.L.renderOnDomContentLoaded
   import org.scalajs.dom.document
 

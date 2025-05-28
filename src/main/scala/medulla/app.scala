@@ -26,14 +26,14 @@ case class DefaultMedullaApp[UID](config: MedullaConfig, login: LoginHelper[UID]
       .periodic(config.login.testCookieEvery)
       .map(_ => login.isLoggedIn)
       .distinct
-      .withCurrentValueOf(Globals.currentUser)
+      .withCurrentValueOf(Globals.user)
       .map( (a, b) => (a, b.map(cast)) )
       .flatMapSwitch(login.test)
 
     div(
       display("contents"), //https://caniuse.com/css-display-contents
-      user  --> Globals.user,
-      child <-- Globals.user.events.distinct.map(_.map(cast)).map(renderBody)
+      user  --> Globals.userUpdates,
+      child <-- Globals.user.map(_.map(cast)).map(renderBody)
     )
   }
 }

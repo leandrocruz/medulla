@@ -10,6 +10,6 @@ object Globals {
 
   import com.raquo.laminar.api.L.*
 
-  val user        = new EventBus[Option[UserToken[_]]]
-  val currentUser = user.events.distinct.toSignal(None)
+  val userUpdates = new EventBus[Option[UserToken[_]]]
+  val user        = userUpdates.events.distinct.toSignal(None)
 }
