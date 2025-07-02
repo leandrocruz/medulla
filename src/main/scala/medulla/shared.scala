@@ -18,7 +18,7 @@ object login {
         .Cookie
         .parse(document.cookie)
         .exists { (_, cookie) =>
-          cookie.name == "medulla-auth-loggedin" && cookie.value == "true"
+          cookie.name == "medulla-auth-logged-in" && cookie.value == "true"
         }
     }
 

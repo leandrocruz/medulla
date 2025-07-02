@@ -1,5 +1,7 @@
 package medulla.sample
 
+import medulla.ui.SimpleGridLayout
+
 object login {
 
   import medulla.UserToken
@@ -49,42 +51,54 @@ object render {
   import org.scalajs.dom.*
 
   object HomePageView {
-    def apply(): HtmlElement = div("HOME")
+    def apply(): HtmlElement = h1("HOME")
   }
 
   object TestPageView {
-    def apply(): HtmlElement = div("TEST")
+    def apply(): HtmlElement = {
+      val value = Var("")
+      div(
+        cls("flex flex-col"),
+        div("Value: ", child.text <-- value),
+        input(
+          cls("p-2 my-4 rounded-md"),
+          typ("text"),
+          onInput.mapToValue --> value
+        ),
+      )
+    }
   }
 
   object UnknownPageView {
-    def apply(s: String): HtmlElement = {
-      div(
-        div(s"TODO: ${s}"),
-        div(a(router.linkTo(HomePage), "HOME")),
-        div(a(router.linkTo(TestPage), "TEST"))
-      )
-    }
-  }
-
-  object SimpleLayout {
-    import medulla.router.MedullaRouter
-
-    def apply(router: MedullaRouter[Page], user: UserToken[Long]): HtmlElement = {
-      div(
-        h1(s"TOP ${user.email} (${user.id})"),
-        child <-- router.render {
-          case HomePage       => HomePageView()
-          case TestPage       => TestPageView()
-          case UnknownPage(s) => UnknownPageView(s)
-        }
-      )
-
-    }
+    def apply(s: String): HtmlElement = div(s"Unknown page for '$s'")
   }
 
   class SampleAppRender extends AppRender[Long] {
-    override def whenLoggedOut                       = div("Logged Out!")
-    override def whenLoggedIn(user: UserToken[Long]) = SimpleLayout(router, user)
+
+    override def whenLoggedOut = div("Logged Out!")
+
+    override def whenLoggedIn(user: UserToken[Long]) = {
+
+      val main = router.render {
+        case SampleRouter.HomePage => HomePageView()
+        case SampleRouter.TestPage => TestPageView()
+        case UnknownPage(str)      => UnknownPageView(str)
+      }
+
+      val left = Signal.fromValue {
+        div(
+          div(a(router.linkTo(HomePage), "home")),
+          div(a(router.linkTo(TestPage), "test"))
+        )
+      }
+
+      SimpleGridLayout(
+        Signal.fromValue(div(cls("m-auto font-bold italic text-xl"), "Medulla")),
+        Signal.fromValue(h1(s"${user.email} (${user.id})")),
+        left,
+        main
+      ).render
+    }
   }
 }
 
