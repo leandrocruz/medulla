@@ -78,7 +78,6 @@ object render {
       val content = button("Hide", onClick.mapTo(false) --> opened)
 
       div(
-        h1("MODAL PAGE"),
         button(cls("p"), "Show", onClick.mapTo(true)  --> opened),
         child.maybe <-- Modal(content, opened)
       )
