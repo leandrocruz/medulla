@@ -1,7 +1,5 @@
 package medulla.sample
 
-import medulla.ui.SimpleGridLayout
-
 object login {
 
   import medulla.UserToken
@@ -29,22 +27,26 @@ object SampleRouter {
   import io.circe.generic.semiauto.*
 
   sealed trait Page
+  case object BindValuePage           extends Page
   case object HomePage                extends Page
-  case object TestPage                extends Page
+  case object ModalPage               extends Page
   case class UnknownPage(str: String) extends Page
 
   given Decoder[Page] = deriveDecoder
   given Encoder[Page] = deriveEncoder
 
   val router = new MedullaRouter[Page](UnknownPage.apply) (
-    Route.static(TestPage, root / "test"),
-    Route.static(HomePage, root / "home")
+    Route.static(BindValuePage, root / "bind" ),
+    Route.static(ModalPage    , root / "modal"),
+    Route.static(HomePage     , root / "home" )
   )
 }
 
 object render {
 
   import SampleRouter.*
+  import medulla.ui.layout.SimpleGridLayout
+  import medulla.ui.modal.Modal
   import medulla.render.AppRender
   import medulla.UserToken
   import com.raquo.laminar.api.L.*
@@ -54,7 +56,7 @@ object render {
     def apply(): HtmlElement = h1("HOME")
   }
 
-  object TestPageView {
+  object BindValuePageView {
     def apply(): HtmlElement = {
       val value = Var("")
       div(
@@ -65,6 +67,20 @@ object render {
           typ("text"),
           onInput.mapToValue --> value
         ),
+      )
+    }
+  }
+
+  object ModalPageView {
+    def apply(): HtmlElement = {
+
+      val opened = Var(false)
+      val content = button("Hide", onClick.mapTo(false) --> opened)
+
+      div(
+        h1("MODAL PAGE"),
+        button(cls("p"), "Show", onClick.mapTo(true)  --> opened),
+        child.maybe <-- Modal(content, opened)
       )
     }
   }
@@ -80,15 +96,17 @@ object render {
     override def whenLoggedIn(user: UserToken[Long]) = {
 
       val main = router.render {
-        case SampleRouter.HomePage => HomePageView()
-        case SampleRouter.TestPage => TestPageView()
-        case UnknownPage(str)      => UnknownPageView(str)
+        case BindValuePage    => BindValuePageView()
+        case HomePage         => HomePageView()
+        case ModalPage        => ModalPageView()
+        case UnknownPage(str) => UnknownPageView(str)
       }
 
       val left = Signal.fromValue {
         div(
-          div(a(router.linkTo(HomePage), "home")),
-          div(a(router.linkTo(TestPage), "test"))
+          div(a(router.linkTo(HomePage)     , "home")),
+          div(a(router.linkTo(BindValuePage), "bind")),
+          div(a(router.linkTo(ModalPage)    , "modal"))
         )
       }
 
