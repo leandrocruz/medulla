@@ -30,15 +30,17 @@ object SampleRouter {
   case object BindValuePage           extends Page
   case object HomePage                extends Page
   case object ModalPage               extends Page
+  case object DragAndDropPage         extends Page
   case class UnknownPage(str: String) extends Page
 
   given Decoder[Page] = deriveDecoder
   given Encoder[Page] = deriveEncoder
 
   val router = new MedullaRouter[Page](UnknownPage.apply) (
-    Route.static(BindValuePage, root / "bind" ),
-    Route.static(ModalPage    , root / "modal"),
-    Route.static(HomePage     , root / "home" )
+    Route.static(BindValuePage  , root / "bind" ),
+    Route.static(ModalPage      , root / "modal"),
+    Route.static(DragAndDropPage, root / "dnd"  ),
+    Route.static(HomePage       , root / "home" )
   )
 }
 
@@ -47,6 +49,7 @@ object render {
   import SampleRouter.*
   import medulla.ui.layout.SimpleGridLayout
   import medulla.ui.modal.Modal
+  import medulla.ui.dnd.DragAndDrop
   import medulla.render.AppRender
   import medulla.UserToken
   import com.raquo.laminar.api.L.*
@@ -84,6 +87,14 @@ object render {
     }
   }
 
+  object DragAndDropView {
+    def apply(): HtmlElement = {
+      DragAndDrop(
+        div("Drag Me!")
+      )
+    }
+  }
+
   object UnknownPageView {
     def apply(s: String): HtmlElement = div(s"Unknown page for '$s'")
   }
@@ -98,6 +109,7 @@ object render {
         case BindValuePage    => BindValuePageView()
         case HomePage         => HomePageView()
         case ModalPage        => ModalPageView()
+        case DragAndDropPage  => DragAndDropView()
         case UnknownPage(str) => UnknownPageView(str)
       }
 
