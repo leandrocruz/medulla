@@ -23,24 +23,31 @@ lazy val root = (project in file("."))
   .aggregate(framework, sample)
 
 lazy val framework = project.in(file("modules/framework"))
-  .enablePlugins(ScalaJSPlugin) // Enable the Scala.js plugin in this project
+  .enablePlugins(ScalaJSPlugin)
   .settings(
     name := "medulla-framework",
+    // Library configuration - no module initializer, no module splitting
     scalaJSLinkerConfig ~= {
-      _ .withESFeatures(_.withESVersion(ESVersion.ES2018))
+      _.withESFeatures(_.withESVersion(ESVersion.ES2018))
         .withModuleKind(ModuleKind.ESModule)
         .withSourceMap(true)
-        .withModuleSplitStyle(ModuleSplitStyle.SmallModulesFor(List("medulla")))
     },
     sharedSettings
   )
 
 
 lazy val sample = project.in(file("modules/sample"))
-  .enablePlugins(ScalaJSPlugin) // Enable the Scala.js plugin in this project
+  .enablePlugins(ScalaJSPlugin)
   .settings(
     name := "medulla-sample",
+    // Application configuration - uses main module initializer and proper linker settings
     scalaJSUseMainModuleInitializer := true,
+    scalaJSLinkerConfig ~= {
+      _.withESFeatures(_.withESVersion(ESVersion.ES2018))
+        .withModuleKind(ModuleKind.ESModule)
+        .withSourceMap(true)
+        .withModuleSplitStyle(ModuleSplitStyle.SmallModulesFor(List("medulla.sample")))
+    },
     sharedSettings
   )
   .dependsOn(framework)
