@@ -90,7 +90,10 @@ object render {
   object DragAndDropView {
     def apply(): HtmlElement = {
       DragAndDrop(
-        div("Drag Me!")
+        div(
+          cls("border p bg-white cursor-move"),
+          "Drag Me!"
+        )
       )
     }
   }
@@ -115,9 +118,10 @@ object render {
 
       val left = Signal.fromValue {
         div(
-          div(a(router.linkTo(HomePage)     , "home")),
-          div(a(router.linkTo(BindValuePage), "bind")),
-          div(a(router.linkTo(ModalPage)    , "modal"))
+          div(a(router.linkTo(HomePage)       , "home")),
+          div(a(router.linkTo(BindValuePage)  , "bind")),
+          div(a(router.linkTo(ModalPage)      , "modal")),
+          div(a(router.linkTo(DragAndDropPage), "drag and drop"))
         )
       }
 
