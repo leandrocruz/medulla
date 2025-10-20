@@ -2,9 +2,9 @@ package medulla.sample
 
 object login {
 
+  import com.raquo.airstream.core.EventStream
   import medulla.UserToken
   import medulla.login.DefaultLoginHelper
-  import com.raquo.airstream.core.EventStream
 
   class SampleLoginHelper extends DefaultLoginHelper {
     override def retrieve = EventStream.fromValue {
@@ -21,10 +21,10 @@ object login {
 
 object SampleRouter {
 
-  import medulla.router.MedullaRouter
   import com.raquo.waypoint.*
   import io.circe.*
   import io.circe.generic.semiauto.*
+  import medulla.router.MedullaRouter
 
   sealed trait Page
   case object BindValuePage           extends Page
@@ -47,13 +47,12 @@ object SampleRouter {
 object render {
 
   import SampleRouter.*
+  import com.raquo.laminar.api.L.*
+  import medulla.UserToken
+  import medulla.render.AppRender
+  import medulla.ui.dnd.{DragAndDrop, Point}
   import medulla.ui.layout.SimpleGridLayout
   import medulla.ui.modal.Modal
-  import medulla.ui.dnd.DragAndDrop
-  import medulla.render.AppRender
-  import medulla.UserToken
-  import com.raquo.laminar.api.L.*
-  import org.scalajs.dom.*
 
   object HomePageView {
     def apply(): HtmlElement = div(cls("flex h-full items-center justify-center"), img(src("/medulla.png")))
@@ -89,10 +88,17 @@ object render {
 
   object DragAndDropView {
     def apply(): HtmlElement = {
-      DragAndDrop(
-        div(
-          cls("border p bg-white cursor-move"),
-          "Drag Me!"
+
+      val position = Var(Point.empty)
+
+      div(
+        div("Position: ", child.text <-- position.signal.map(_.toString)),
+        DragAndDrop(
+          position,
+          div(
+            cls("border p bg-white cursor-move"),
+            "Drag Me!"
+          )
         )
       )
     }

@@ -19,7 +19,9 @@ case class Point(x: Double, y: Double) {
 
 object DragAndDrop {
 
-  def apply(el: HtmlElement, debug: Boolean = false): HtmlElement = {
+  def apply(el: HtmlElement): HtmlElement = apply(Var(Point.empty), el)
+
+  def apply(pos: Var[Point], el: HtmlElement): HtmlElement = {
 
     val diff      = Var(Option.empty[Point])
     val moves     = EventBus[Option[Point]]()
@@ -44,11 +46,12 @@ object DragAndDrop {
       position("fixed"),
       top   <-- positions.map(_.top),
       left  <-- positions.map(_.left),
+      positions --> pos,
       onMouseUp  .mapTo(None) --> diff,
       onMouseDown.map(Point.of).map(initialDiff) --> diff,
       onMouseMove.map(Point.of).compose(_.withCurrentValueOf(diff).map(onMove)) --> moves,
     )
 
-    if(debug) wrap(result) else result
+    if(false) wrap(result) else result
   }
 }
