@@ -56,7 +56,7 @@ object render {
   import org.scalajs.dom.*
 
   object HomePageView {
-    def apply(): HtmlElement = h1("HOME")
+    def apply(): HtmlElement = div(cls("flex h-full items-center justify-center"), img(src("/medulla.png")))
   }
 
   object BindValuePageView {
