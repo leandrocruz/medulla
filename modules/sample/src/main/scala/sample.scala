@@ -3,8 +3,8 @@ package medulla.sample
 object login {
 
   import com.raquo.airstream.core.EventStream
-  import medulla.UserToken
   import medulla.login.DefaultLoginHelper
+  import medulla.shared.types.UserToken
 
   class SampleLoginHelper extends DefaultLoginHelper {
     override def retrieve = EventStream.fromValue {
@@ -24,7 +24,9 @@ object SampleRouter {
   import com.raquo.waypoint.*
   import io.circe.*
   import io.circe.generic.semiauto.*
-  import medulla.router.MedullaRouter
+  import io.circe.parser.decode
+  import io.circe.syntax.*
+  import medulla.router.{MedullaRouter, PageCodec}
 
   sealed trait Page
   case object BindValuePage           extends Page
@@ -35,6 +37,11 @@ object SampleRouter {
 
   given Decoder[Page] = deriveDecoder
   given Encoder[Page] = deriveEncoder
+
+  given PageCodec[Page] = new PageCodec[Page] {
+    override def encodePage(page: Page)   = page.asJson.spaces2SortKeys
+    override def decodePage(data: String) = decode[Page](data).getOrElse(UnknownPage(data))
+  }
 
   val router = new MedullaRouter[Page](UnknownPage.apply) (
     Route.static(BindValuePage  , root / "bind" ),
@@ -48,8 +55,8 @@ object render {
 
   import SampleRouter.*
   import com.raquo.laminar.api.L.*
-  import medulla.UserToken
   import medulla.render.AppRender
+  import medulla.shared.types.UserToken
   import medulla.ui.dnd.{DragAndDrop, Point}
   import medulla.ui.layout.SimpleGridLayout
   import medulla.ui.modal.Modal
@@ -81,7 +88,7 @@ object render {
 
       div(
         button(cls("p"), "Show", onClick.mapTo(true)  --> opened),
-        child.maybe <-- Modal(content, opened)
+        child.maybe <-- Modal(opened, Signal.fromValue(content))
       )
     }
   }

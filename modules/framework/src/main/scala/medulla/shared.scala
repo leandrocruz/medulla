@@ -3,6 +3,7 @@ package medulla
 object login {
 
   import com.raquo.airstream.core.EventStream
+  import medulla.shared.types.UserToken
   import org.scalajs.dom.{console, document}
 
   trait LoginHelper[UID] {
@@ -34,10 +35,41 @@ object login {
 object render {
 
   import com.raquo.laminar.api.L.*
+  import medulla.shared.types.{GlobalAppData, UserToken}
+
+  import scala.util.{Failure, Success, Try}
 
   trait AppRender[UID] {
     def whenLoggedIn(user: UserToken[UID]): HtmlElement
     def whenLoggedOut                     : HtmlElement
+  }
+
+  abstract class BaseAppRender[APPDATA <: GlobalAppData, UID] extends AppRender[UID] {
+
+    private val result = Var(Option.empty[Try[APPDATA]])
+
+    def loadAppData: EventStream[APPDATA]
+
+    protected def appLoading  ()              (using UserToken[UID]): HtmlElement = div("Loading")
+    protected def appLoaded   (data: APPDATA) (using UserToken[UID]): HtmlElement = div("Loaded")
+    protected def appNotLoaded(err: Throwable)(using UserToken[UID]): HtmlElement = div(s"Load Error: ${err.getMessage}")
+
+    protected def renderApp(user: UserToken[UID])(result: Option[Try[APPDATA]]): HtmlElement = {
+      given UserToken[UID] = user
+      result match
+        case None                => appLoading()
+        case Some(Success(data)) => appLoaded(data)
+        case Some(Failure(err))  => appNotLoaded(err)
+    }
+
+    override def whenLoggedIn(user: UserToken[UID]) = {
+      div(
+        display("contents"),
+        loadAppData.recoverToTry.map(Some(_))    --> result,
+        result.signal.map(_.flatMap(_.toOption)) --> Globals.appDataUpdates,
+        child                                    <-- result.signal.map(renderApp(user))
+      )
+    }
   }
 }
 
@@ -98,18 +130,21 @@ object router {
   import com.raquo.laminar.api.L
   import com.raquo.laminar.api.L.*
   import com.raquo.waypoint.{Route, Router, SplitRender}
-  import io.circe.*
-  import io.circe.parser.*
-  import io.circe.syntax.*
-  import scala.reflect.ClassTag
   import org.scalajs.dom
-  import scala.util.{Try, Success, Failure}
 
-  class MedullaRouter[BasePage: ClassTag](dftl: String => BasePage)(routes: Route[_ <: BasePage, _]*)(using Encoder[BasePage], Decoder[BasePage]) {
+  import scala.reflect.ClassTag
+  import scala.util.{Failure, Success, Try}
+
+  trait PageCodec[BasePage] {
+    def encodePage(page: BasePage): String
+    def decodePage(data: String)  : BasePage
+  }
+
+  class MedullaRouter[BasePage: ClassTag](dftl: String => BasePage)(routes: Route[_ <: BasePage, _]*)(using codec: PageCodec[BasePage]) {
 
     protected def title        (page: BasePage) : String   = "Medulla"
-    protected def encodePage   (page: BasePage) : String   = page.asJson.spaces2SortKeys
-    protected def decodePage   (data: String)   : BasePage = decode[BasePage](data).getOrElse(dftl(data))
+    protected def encodePage   (page: BasePage) : String   = codec.encodePage(page)
+    protected def decodePage   (data: String)   : BasePage = codec.decodePage(data)
     protected def unknownRoute (str: String)    : BasePage = dftl(str)
 
     private val router = Router[BasePage](routes.toList, encodePage, decodePage, title, unknownRoute)

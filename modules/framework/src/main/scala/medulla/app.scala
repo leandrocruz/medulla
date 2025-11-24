@@ -4,7 +4,7 @@ import com.raquo.laminar.api.L.*
 import medulla.config.MedullaConfig
 import medulla.login.LoginHelper
 import medulla.render.AppRender
-import org.scalajs.dom.*
+import medulla.shared.types.UserToken
 
 trait MedullaApp {
   def rootElement: HtmlElement

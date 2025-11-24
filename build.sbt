@@ -9,18 +9,24 @@ val sharedSettings = Seq(
     "org.wvlet.airframe" %%% "airframe"             % "23.5.6",
     "com.raquo"          %%% "laminar"              % "17.2.0",
     "com.raquo"          %%% "waypoint"             % "9.0.0",
-    "io.circe"           %%% "circe-core"           % "0.14.5",
-    "io.circe"           %%% "circe-parser"         % "0.14.5",
-    "io.circe"           %%% "circe-generic"        % "0.14.5",
-    "io.github.cquiroz"  %%% "scala-java-time"      % "2.5.0",
-    "io.github.cquiroz"  %%% "scala-java-time-tzdb" % "2.5.0",
     "org.scalatest"      %%% "scalatest"            % "3.2.18" % Test
   )
 )
 
 lazy val root = (project in file("."))
   .settings(name := "medulla")
-  .aggregate(framework, sample)
+  .aggregate(
+    shared.js,
+    shared.jvm,
+    framework,
+    sample
+  )
+
+lazy val shared = (crossProject(JSPlatform, JVMPlatform) in file("modules/shared"))
+  .enablePlugins(ScalaJSPlugin)
+  .settings(
+    name := "medulla-shared",
+  )
 
 lazy val framework = project.in(file("modules/framework"))
   .enablePlugins(ScalaJSPlugin)
@@ -34,7 +40,7 @@ lazy val framework = project.in(file("modules/framework"))
     },
     sharedSettings
   )
-
+  .dependsOn(shared.js)
 
 lazy val sample = project.in(file("modules/sample"))
   .enablePlugins(ScalaJSPlugin)
@@ -48,6 +54,11 @@ lazy val sample = project.in(file("modules/sample"))
         .withSourceMap(true)
         .withModuleSplitStyle(ModuleSplitStyle.SmallModulesFor(List("medulla.sample")))
     },
-    sharedSettings
+    sharedSettings,
+    libraryDependencies ++= Seq(
+      "io.circe" %%% "circe-core"    % "0.14.5",
+      "io.circe" %%% "circe-parser"  % "0.14.5",
+      "io.circe" %%% "circe-generic" % "0.14.5",
+    )
   )
   .dependsOn(framework)
