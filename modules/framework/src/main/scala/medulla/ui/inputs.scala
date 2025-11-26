@@ -163,7 +163,7 @@ object Input {
       val isFocused = Var(false)
       val floating  = Signals.and(inner.in.read, isFocused) { _.nonEmpty || _ }
       div(
-        cls("medulla-floating"),
+        cls("medulla floating input"),
         cls.toggle("active") <-- floating,
         label(labelText),
         inner.node.amend(
