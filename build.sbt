@@ -23,7 +23,6 @@ lazy val root = (project in file("."))
   )
 
 lazy val shared = (crossProject(JSPlatform, JVMPlatform) in file("modules/shared"))
-  .enablePlugins(ScalaJSPlugin)
   .settings(
     name := "medulla-shared",
   )
