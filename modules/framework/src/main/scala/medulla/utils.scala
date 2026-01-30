@@ -72,3 +72,39 @@ object Vars {
   extension(v: Var[Boolean])
     def toggle: Unit = v.update( value => !value)
 }
+
+object Mediator {
+
+  import com.raquo.laminar.api.L.*
+  import scala.util.{Try, Success, Failure}
+
+  trait Mediator[S] {
+    def trigger   : Observer[Unit]
+    def responses : EventStream[S]
+    def wire      : Modifier[HtmlElement]
+    def disabled  : Signal[Boolean]
+  }
+
+  def make[REQ, RES](request: Signal[Try[REQ]], execute: REQ => EventStream[Try[RES]]): Mediator[Try[RES]] = {
+
+    val bus     = new EventBus[Unit]
+    val results = new EventBus[Try[RES]]
+    val busy    = Var(false)
+    val tmp     = bus.events.sample(request).flatMapSwitch {
+      case Failure(error) => EventStream.fromValue(Failure(error))
+      case Success(valid) =>
+        busy.set(true) //FIXME: this is ugly
+        execute(valid).map { result =>
+          busy.set(false)
+          result
+        }
+    }
+
+    new Mediator {
+      override def trigger   = bus.writer
+      override def responses = results.events
+      override def wire      = tmp --> results
+      override def disabled  = Signals.and(busy, request) { _ || _.isFailure }
+    }
+  }
+}
