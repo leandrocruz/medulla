@@ -7,8 +7,8 @@ ThisBuild / version      := "v0.0.1-SNAPSHOT"
 val sharedSettings = Seq(
   libraryDependencies ++= Seq(
     "org.wvlet.airframe" %%% "airframe"             % "23.5.6",
-    "com.raquo"          %%% "laminar"              % "17.2.0",
-    "com.raquo"          %%% "waypoint"             % "9.0.0",
+    "com.raquo"          %%% "laminar"              % "17.2.1",
+    "com.raquo"          %%% "waypoint"             % "10.0.0-M2",
     "org.scalatest"      %%% "scalatest"            % "3.2.18" % Test
   )
 )
