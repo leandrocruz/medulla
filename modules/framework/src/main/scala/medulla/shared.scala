@@ -8,6 +8,7 @@ object login {
 
   trait LoginHelper[UID] {
     def isLoggedIn: Boolean
+    def logout: EventStream[Unit]
     def test(in: Boolean, user: Option[UserToken[UID]]): EventStream[Option[UserToken[UID]]]
   }
 
@@ -27,6 +28,8 @@ object login {
       console.debug(s"[Medulla] Testing cookie:$in, user:${user.map(_.email).getOrElse("_")}")
       if (in) retrieve else EventStream.fromValue(None)
     }
+
+    override def logout = EventStream.unit()
 
     def retrieve: EventStream[Option[UserToken[Long]]]
   }
@@ -48,7 +51,7 @@ object render {
 
     private val result = Var(Option.empty[Try[APPDATA]])
 
-    def loadAppData: EventStream[APPDATA]
+    def loadAppData: EventStream[Try[APPDATA]]
 
     protected def appLoading  ()              (using UserToken[UID]): HtmlElement = div("Loading")
     protected def appLoaded   (data: APPDATA) (using UserToken[UID]): HtmlElement = div("Loaded")
@@ -65,7 +68,7 @@ object render {
     override def whenLoggedIn(user: UserToken[UID]) = {
       div(
         display("contents"),
-        loadAppData.recoverToTry.map(Some(_))    --> result,
+        loadAppData.map(Some(_))                 --> result,
         result.signal.map(_.flatMap(_.toOption)) --> Globals.appDataUpdates,
         child                                    <-- result.signal.map(renderApp(user))
       )
