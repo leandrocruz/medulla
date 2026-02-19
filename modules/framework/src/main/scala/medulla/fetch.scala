@@ -13,18 +13,52 @@ import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
 private type Opt = FetchOptions[dom.BodyInit] => Unit
+type OptionSetter = HandlerOptions => HandlerOptions
 
-trait HandlerOption {
-  def noSpinner: Unit
-  def withSpinner(spinner: Spinner): Unit
-  def noLogging: Unit
+class HandlerOptions {
+
+  var spinner : Spinner = NoSpinner
+  var log     : Log     = ConsoleLog()
+
+  private def result(block: => Unit): HandlerOptions = {
+    block
+    this
+  }
+
+  def withSpinner(spinner: Spinner): HandlerOptions = result { this.spinner = spinner }
+  def noLogging                    : HandlerOptions = result { this.log     = NoLog() }
+
+  override def toString: String = s"spinner(${spinner}), log(${log})"
 }
 
-type OptionSetter = HandlerOption => Unit
+object HandlerOptions {
+  def of(setters: Seq[OptionSetter]): HandlerOptions = {
+    setters.foldLeft(HandlerOptions()) {
+      (buffer, setter: OptionSetter) => {
+        val result = setter(buffer)
+        console.log(s"Applying ${setter} to ${buffer} => ${result}")
+        result
+      }
+    }
+  }
+}
 
-trait HandlerOptions {
-  def spinner : Spinner
-  def log     : String => Unit
+trait Log {
+  def debug(msg: Any, other: Any*): Unit
+  def info (msg: Any, other: Any*): Unit
+  def error(msg: Any, other: Any*): Unit
+}
+
+class NoLog extends Log {
+  override def debug(msg: Any, other: Any*) = ()
+  override def info (msg: Any, other: Any*) = ()
+  override def error(msg: Any, other: Any*) = ()
+}
+
+class ConsoleLog extends Log {
+  override def debug(msg: Any, other: Any*) = dom.console.debug(msg, other: _*)
+  override def info (msg: Any, other: Any*) = dom.console.info (msg, other: _*)
+  override def error(msg: Any, other: Any*) = dom.console.error(msg, other: _*)
 }
 
 trait RequestEncoder[T] {
@@ -38,20 +72,20 @@ trait ResponseDecoder[T] {
 trait Handler {
 
   def start[T](request: ValidRequest[T], options: HandlerOptions, url: String): Unit = {
-    options.log(s"[Medulla] Fetch Start '${request.path}'")
+    options.log.info(s"[Medulla] Fetch Start '${request.path}'")
     options.spinner.start
   }
 
   def stop[T](request: ValidRequest[T], options: HandlerOptions, response: Try[T]): Try[T] = {
 
     def onSuccess(value: T) = {
-      options.log(s"[Medulla] Fetch Success '${request.path}'")
+      options.log.info(s"[Medulla] Fetch Success '${request.path}'")
       options.spinner.stop
       Success(value)
     }
 
     def onError(e: Throwable) = {
-      options.log(s"[Medulla] Fetch Failure '${request.path}': ${e.getMessage}")
+      options.log.error(s"[Medulla] Fetch Failure '${request.path}': ${e.getMessage}")
       val refined = Exception(s"Error fetching url '${request.path}': ${e.getMessage}", e)
       options.spinner.stopWithError(refined)
       Failure(refined)
@@ -118,7 +152,7 @@ case class BasicFetcher(config: MedullaConfig, handler: Handler) extends Fetcher
 
     def perform(it: ValidRequest[T]) = {
       val url     = config.fetch.baseUrl + it.path
-      val options = HandlerOptions.from(setters)
+      val options = HandlerOptions.of(setters)
       handler.start(it, options, url)
       FetchStream
         .raw(_ => it.method, url, it.options: _*)
@@ -135,16 +169,9 @@ case class BasicFetcher(config: MedullaConfig, handler: Handler) extends Fetcher
   }
 }
 
-object HandlerOptions {
-  def from(setters: Seq[OptionSetter]): HandlerOptions = new HandlerOptions {
-    override def spinner = NoSpinner
-    override def log     = message => dom.console.info(message)
-  }
-}
-
 case class LogHandler(handler: Handler) extends Handler {
   override def handle[T](request: ValidRequest[T], options: HandlerOptions, response: Response)(using ExecutionContext) = {
-    options.log(s"[Medulla] Fetch '${request.path}' handle status: ${response.status}")
+    options.log.info(s"[Medulla] Fetch '${request.path}' handle status: ${response.status}")
     handler.handle(request, options, response)
   }
 }
@@ -153,7 +180,7 @@ case class AuthAwareHandler[UID](handler: Handler, login: LoginHelper[UID]) exte
   override def handle[T](request: ValidRequest[T], options: HandlerOptions, response: Response)(using ExecutionContext) = {
 
     def onForbiddenLogOut: EventStream[Unit] = {
-      options.log(s"[Medulla] Access Denied: ${response.status}")
+      options.log.error(s"[Medulla] Access Denied: ${response.status}")
       options.spinner.stopWithError(Exception("Access Denied"))
       login.logout
     }
