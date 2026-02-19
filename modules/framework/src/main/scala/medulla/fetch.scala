@@ -6,7 +6,7 @@ import org.scalajs.dom.*
 import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L.*
 import com.raquo.airstream.web.FetchOptions
-import medulla.login.LoginHelper
+import medulla.login.Logout
 import medulla.{NoSpinner, Spinner}
 
 import scala.concurrent.ExecutionContext
@@ -176,13 +176,13 @@ case class LogHandler(handler: Handler) extends Handler {
   }
 }
 
-case class AuthAwareHandler[UID](handler: Handler, login: LoginHelper[UID]) extends Handler {
+case class AuthAwareHandler[UID](handler: Handler, logout: Logout) extends Handler {
   override def handle[T](request: ValidRequest[T], options: HandlerOptions, response: Response)(using ExecutionContext) = {
 
     def onForbiddenLogOut: EventStream[Unit] = {
       options.log.error(s"[Medulla] Access Denied: ${response.status}")
       options.spinner.stopWithError(Exception("Access Denied"))
-      login.logout
+      logout.logout
     }
 
     response.status match

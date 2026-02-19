@@ -83,6 +83,7 @@ object Mediator {
     def responses : EventStream[S]
     def wire      : Modifier[HtmlElement]
     def disabled  : Signal[Boolean]
+    def working   : Signal[Boolean]
   }
 
   def make[REQ, RES](request: Signal[Try[REQ]], execute: REQ => EventStream[Try[RES]]): Mediator[Try[RES]] = {
@@ -105,6 +106,7 @@ object Mediator {
       override def responses = results.events
       override def wire      = tmp --> results
       override def disabled  = Signals.and(busy, request) { _ || _.isFailure }
+      override def working   = busy.signal
     }
   }
 }

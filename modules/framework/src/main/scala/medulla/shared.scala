@@ -6,9 +6,18 @@ object login {
   import medulla.shared.types.UserToken
   import org.scalajs.dom.{console, document}
 
+  trait Logout {
+    def logout: EventStream[Unit]
+  }
+
+  class LocalLogout extends Logout {
+    override def logout = EventStream.fromValue {
+      document.cookie = "medulla-auth-logged-in=false"
+    }
+  }
+
   trait LoginHelper[UID] {
     def isLoggedIn: Boolean
-    def logout: EventStream[Unit]
     def test(in: Boolean, user: Option[UserToken[UID]]): EventStream[Option[UserToken[UID]]]
   }
 
@@ -28,8 +37,6 @@ object login {
       console.debug(s"[Medulla] Testing cookie:$in, user:${user.map(_.email).getOrElse("_")}")
       if (in) retrieve else EventStream.fromValue(None)
     }
-
-    override def logout = EventStream.unit()
 
     def retrieve: EventStream[Option[UserToken[Long]]]
   }
