@@ -1,5 +1,7 @@
 package medulla.utils
 
+import com.raquo.laminar.api.L
+
 object Signals {
 
   import com.raquo.laminar.api.L.{Signal, Var, HtmlElement}
@@ -79,14 +81,18 @@ object Mediator {
   import scala.util.{Try, Success, Failure}
 
   trait Mediator[S] {
-    def trigger   : Observer[Unit]
-    def responses : EventStream[S]
-    def wire      : Modifier[HtmlElement]
-    def disabled  : Signal[Boolean]
-    def working   : Signal[Boolean]
+    def trigger       : Observer[Unit]
+    def wire          : Modifier[HtmlElement]
+    def disabled      : Signal[Boolean]
+    def working       : Signal[Boolean]
+    def responses     : EventStream[Try[S]]
+    def errors        : EventStream[Option[Throwable]]
+    def onlyErrors    : EventStream[Throwable]
+    def successes     : EventStream[Option[S]]
+    def onlySuccesses : EventStream[S]
   }
 
-  def make[REQ, RES](request: Signal[Try[REQ]], execute: REQ => EventStream[Try[RES]]): Mediator[Try[RES]] = {
+  def make[REQ, RES](request: Signal[Try[REQ]], execute: REQ => EventStream[Try[RES]]): Mediator[RES] = {
 
     val bus     = new EventBus[Unit]
     val results = new EventBus[Try[RES]]
@@ -102,11 +108,15 @@ object Mediator {
     }
 
     new Mediator {
-      override def trigger   = bus.writer
-      override def responses = results.events
-      override def wire      = tmp --> results
-      override def disabled  = Signals.and(busy, request) { _ || _.isFailure }
-      override def working   = busy.signal
+      override def trigger       = bus.writer
+      override def responses     = results.events
+      override def wire          = tmp --> results
+      override def disabled      = Signals.and(busy, request) { _ || _.isFailure }
+      override def working       = busy.signal
+      override def successes     = responses.map(_.toOption)
+      override def onlySuccesses = successes.filter(_.isDefined).map(_.get)
+      override def errors        = responses.map(_.toEither.swap.toOption)
+      override def onlyErrors    = errors.filter(_.isDefined).map(_.get)
     }
   }
 }
