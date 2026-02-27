@@ -159,6 +159,8 @@ object router {
 
     private val router = Router[BasePage](routes.toList, encodePage, decodePage, title, unknownRoute)
 
+    def page: Signal[BasePage] = router.currentPageSignal
+
     def render(fn: BasePage => HtmlElement): Signal[HtmlElement] = SplitRender[BasePage, HtmlElement](router.currentPageSignal).collect(fn).signal
 
     def navigateTo(page: BasePage): Unit = router.pushState(page)
