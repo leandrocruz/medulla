@@ -140,6 +140,9 @@ object Select {
 
 object Input {
 
+  enum BooleanInput:
+    case checkbox, radio
+
   def basic[T](
     in         : InputVar[T],
     kind       : Signal[InputType] = Signal.fromValue(InputType.text),
@@ -187,5 +190,22 @@ object Input {
         onInput.mapToValue --> in.write
       )
     )
+  )
+
+  def checkbox(in: InputVar[Boolean], isDisabled: Signal[Boolean] = Signal.fromValue(false)) = bool(in, isDisabled, Signal.fromValue(BooleanInput.checkbox))
+  def radio   (in: InputVar[Boolean], isDisabled: Signal[Boolean] = Signal.fromValue(false)) = bool(in, isDisabled, Signal.fromValue(BooleanInput.radio))
+
+  def bool(in: InputVar[Boolean], isDisabled: Signal[Boolean] = Signal.fromValue(false), bType: Signal[BooleanInput]) = CustomInput[Boolean](
+    in,
+    input(
+      cls("medulla"),
+      typ <-- bType.map {
+        case BooleanInput.radio    => "radio"
+        case BooleanInput.checkbox => "checkbox"
+      },
+      disabled <-- isDisabled,
+      checked <-- in.read.map( _ == "sim" ),
+      onClick.mapToChecked.map( if(_) "sim" else "não" ) --> in.write //See SafeConverter[Boolean]
+    ),
   )
 }
