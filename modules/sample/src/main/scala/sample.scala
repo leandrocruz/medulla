@@ -88,7 +88,7 @@ object render {
 
       div(
         button(cls("p"), "Show", onClick.mapTo(true)  --> opened),
-        child.maybe <-- Modal(opened, Signal.fromValue(content))
+        child.maybe <-- Modal(opened.signal, Signal.fromValue(content))
       )
     }
   }
