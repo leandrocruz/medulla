@@ -19,6 +19,7 @@ lazy val root = (project in file("."))
     shared.js,
     shared.jvm,
     framework,
+    material,
     sample
   )
 
@@ -41,6 +42,19 @@ lazy val framework = project.in(file("modules/framework"))
   )
   .dependsOn(shared.js)
 
+lazy val material = project.in(file("modules/material"))
+  .enablePlugins(ScalaJSPlugin)
+  .settings(
+    name := "medulla-material",
+    scalaJSLinkerConfig ~= {
+      _.withESFeatures(_.withESVersion(ESVersion.ES2018))
+        .withModuleKind(ModuleKind.ESModule)
+        .withSourceMap(true)
+    },
+    sharedSettings
+  )
+  .dependsOn(framework)
+
 lazy val sample = project.in(file("modules/sample"))
   .enablePlugins(ScalaJSPlugin)
   .settings(
@@ -60,4 +74,4 @@ lazy val sample = project.in(file("modules/sample"))
       "io.circe" %%% "circe-generic" % "0.14.5",
     )
   )
-  .dependsOn(framework)
+  .dependsOn(framework, material)
