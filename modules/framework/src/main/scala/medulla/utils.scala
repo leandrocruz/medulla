@@ -7,10 +7,14 @@ object Signals {
   import com.raquo.laminar.api.L.{Signal, Var, HtmlElement}
   import scala.scalajs.js
 
-  def and[A, B, C](va: Var[A]   , vb: Var[B])    (fn: (A, B) => C): Signal[C] = va.signal.combineWith(vb.signal).map((a, b) => fn(a, b))
-  def and[A, B, C](sa: Signal[A], vb: Var[B])    (fn: (A, B) => C): Signal[C] = sa       .combineWith(vb.signal).map((a, b) => fn(a, b))
-  def and[A, B, C](va: Var[A]   , sb: Signal[B]) (fn: (A, B) => C): Signal[C] = va.signal.combineWith(sb)       .map((a, b) => fn(a, b))
-  def and[A, B, C](sa: Signal[A], sb: Signal[B]) (fn: (A, B) => C): Signal[C] = sa       .combineWith(sb)       .map((a, b) => fn(a, b))
+  @deprecated def and[A, B, C](va: Var[A]   , vb: Var[B])    (fn: (A, B) => C): Signal[C] = va.signal.combineWith(vb.signal).map((a, b) => fn(a, b))
+  @deprecated def and[A, B, C](sa: Signal[A], vb: Var[B])    (fn: (A, B) => C): Signal[C] = sa       .combineWith(vb.signal).map((a, b) => fn(a, b))
+  @deprecated def and[A, B, C](va: Var[A]   , sb: Signal[B]) (fn: (A, B) => C): Signal[C] = va.signal.combineWith(sb)       .map((a, b) => fn(a, b))
+
+  def and[A, B, C]         (sa: Signal[A], sb: Signal[B])                                             (fn: (A, B)          => C): Signal[C] = sa.combineWith(sb)                                                .map((a, b)          => fn(a, b))
+  def and[A, B, C, D]      (sa: Signal[A], sb: Signal[B], sc: Signal[C])                              (fn: (A, B, C)       => D): Signal[D] = sa.combineWith(sb).combineWith(sc)                                .map((a, b, c)       => fn(a, b, c))
+  def and[A, B, C, D, E]   (sa: Signal[A], sb: Signal[B], sc: Signal[C], sd: Signal[D])               (fn: (A, B, C, D)    => E): Signal[E] = sa.combineWith(sb).combineWith(sc).combineWith(sd)                .map((a, b, c, d)    => fn(a, b, c, d))
+  def and[A, B, C, D, E, F](sa: Signal[A], sb: Signal[B], sc: Signal[C], sd: Signal[D], se: Signal[E])(fn: (A, B, C, D, E) => F): Signal[F] = sa.combineWith(sb).combineWith(sc).combineWith(sd).combineWith(se).map((a, b, c, d, e) => fn(a, b, c, d, e))
 
   def resolve[A, B](s1: Var[Option[A]], s2: Var[Option[B]]): Option[(A, B)] = {
     (s1.now(), s2.now()) match
